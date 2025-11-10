@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use App\Http\ViewComposers\TicketFormComposer;
+use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -19,6 +21,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        View::composer('tickets.index', TicketFormComposer::class);
+        View::composer('tickets.create', TicketFormComposer::class);
+        View::composer('tickets.edit', TicketFormComposer::class);
     }
 }

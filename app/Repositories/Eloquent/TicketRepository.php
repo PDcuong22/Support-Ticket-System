@@ -14,4 +14,9 @@ class TicketRepository extends BaseRepository implements TicketRepositoryInterfa
     {
         $this->model = $model;
     }
+
+    public function countByUserId($userId)
+    {
+        return $this->model->where('user_id', $userId)->count();
+    }
 }

@@ -2,4 +2,6 @@
 
 namespace App\Interfaces;
 
-interface TicketRepositoryInterface extends BaseRepositoryInterface {}
+interface TicketRepositoryInterface extends BaseRepositoryInterface {
+    public function countByUserId($userId);
+}

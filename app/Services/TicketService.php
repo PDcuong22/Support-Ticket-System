@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Interfaces\TicketRepositoryInterface;
+use Illuminate\Support\Facades\DB;
 
 class TicketService
 {
@@ -18,9 +19,49 @@ class TicketService
         return $this->ticketRepository->all();
     }
 
+    public function getTicketById($id)
+    {
+        return $this->ticketRepository->find($id);
+    }
+
     public function createTicket(array $data)
     {
-        return $this->ticketRepository->create($data);
+        DB::beginTransaction();
+        try {
+            $ticket = $this->ticketRepository->create([
+                'title' => $data['title'],
+                'description' => $data['description'],
+                'user_id' => $data['user_id'],
+                'status_id' => $data['status_id'],
+                'priority_id' => $data['priority_id'],
+            ]);
+
+            if (isset($data['labels'])) {
+                $ticket->labels()->attach($data['labels']);
+            }
+
+            if (isset($data['categories'])) {
+                $ticket->categories()->attach($data['categories']);
+            }
+
+            // if (isset($data['attachments'])) {
+            //     foreach ($data['attachments'] as $attachmentPath) {
+            //         $ticket->attachments()->create(['file_path' => $attachmentPath]);
+            //     }
+            // }
+            DB::commit();
+            return $ticket->load([
+                'labels',
+                'categories',
+                'attachments',
+                'status',
+                'priority',
+                'user',
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            throw $e;
+        }
     }
 
     public function updateTicket($id, array $data)
@@ -31,5 +72,10 @@ class TicketService
     public function deleteTicket($id)
     {
         return $this->ticketRepository->delete($id);
+    }
+
+    public function getUserTicketCount($userId)
+    {
+        return $this->ticketRepository->countByUserId($userId);
     }
 }
