@@ -1,0 +1,17 @@
+<?php
+
+namespace App\Repositories\Eloquent;
+
+use App\Interfaces\AttachmentRepositoryInterface;
+use App\Repositories\BaseRepository;
+use App\Models\Attachment;
+
+class AttachmentRepository extends BaseRepository implements AttachmentRepositoryInterface
+{
+    protected $model;
+
+    public function __construct(Attachment $model)
+    {
+        $this->model = $model;
+    }
+}

@@ -4,14 +4,17 @@ namespace App\Services;
 
 use App\Interfaces\TicketRepositoryInterface;
 use Illuminate\Support\Facades\DB;
+use App\Services\AttachmentService;
 
 class TicketService
 {
     protected $ticketRepository;
+    protected $attachmentService;
 
-    public function __construct(TicketRepositoryInterface $ticketRepository)
+    public function __construct(TicketRepositoryInterface $ticketRepository, AttachmentService $attachmentService)
     {
         $this->ticketRepository = $ticketRepository;
+        $this->attachmentService = $attachmentService;
     }
 
     public function getAllTickets()
@@ -44,11 +47,11 @@ class TicketService
                 $ticket->categories()->attach($data['categories']);
             }
 
-            // if (isset($data['attachments'])) {
-            //     foreach ($data['attachments'] as $attachmentPath) {
-            //         $ticket->attachments()->create(['file_path' => $attachmentPath]);
-            //     }
-            // }
+            if (isset($data['attachments'])) {
+                foreach ($data['attachments'] as $file) {
+                    $this->attachmentService->uploadAttachment($ticket, $file);
+                }
+            }
             DB::commit();
             return $ticket->load([
                 'labels',

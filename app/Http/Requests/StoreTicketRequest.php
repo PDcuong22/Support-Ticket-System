@@ -33,4 +33,17 @@ class StoreTicketRequest extends FormRequest
             'attachments.*' => 'file|max:10240|mimes:jpg,jpeg,png,pdf,doc,docx,txt',
         ];
     }
+
+    public function messages(): array
+    {
+        return [
+            'title.required' => 'The title field is required.',
+            'description.required' => 'The description field is required.',
+            'priority_id.required' => 'Please select a priority.',
+            'categories.required' => 'Please select at least one category.',
+            'labels.required' => 'Please select at least one label.',
+            'attachments.*.max' => 'Each attachment must not exceed 10MB.',
+            'attachments.*.mimes' => 'Allowed attachment types are: jpg, jpeg, png, pdf, doc, docx, txt.',
+        ];
+    }
 }

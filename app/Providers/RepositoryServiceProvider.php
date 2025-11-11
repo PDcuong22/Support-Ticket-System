@@ -11,6 +11,8 @@ use App\Interfaces\PriorityRepositoryInterface;
 use App\Interfaces\RoleRepositoryInterface;
 use App\Interfaces\TicketRepositoryInterface;
 use App\Interfaces\CommentRepositoryInterface;
+use App\Interfaces\AttachmentRepositoryInterface;
+use App\Repositories\Eloquent\AttachmentRepository;
 use App\Repositories\Eloquent\TicketRepository;
 use App\Repositories\Eloquent\CommentRepository;
 use App\Repositories\Eloquent\CategoryRepository;
@@ -34,6 +36,7 @@ class RepositoryServiceProvider extends ServiceProvider
         RoleRepositoryInterface::class => RoleRepository::class,
         TicketRepositoryInterface::class => TicketRepository::class,
         CommentRepositoryInterface::class => CommentRepository::class,
+        AttachmentRepositoryInterface::class => AttachmentRepository::class,
     ];
 
     /**

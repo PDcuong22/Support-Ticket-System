@@ -4,7 +4,4 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 
-class AttachmentController extends Controller
-{
-    //
-}
+class AttachmentController extends Controller {}

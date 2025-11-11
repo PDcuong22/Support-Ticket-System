@@ -21,8 +21,6 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        View::composer('tickets.index', TicketFormComposer::class);
-        View::composer('tickets.create', TicketFormComposer::class);
-        View::composer('tickets.edit', TicketFormComposer::class);
+        View::composer(['tickets.*', 'admin.tickets.*'], TicketFormComposer::class);
     }
 }
