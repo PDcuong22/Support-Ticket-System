@@ -81,10 +81,17 @@
                     #{{ $ticket->id }}
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap" data-title>
-                    <a href="{{ route('tickets.show', $ticket->id) }}"
-                        class="text-purple-600 hover:text-purple-900 font-medium hover:underline">
-                        {{ Str::limit($ticket->title, 50) }}
-                    </a>
+                    @if(!empty($isAdminView) && $isAdminView)
+                        <a href="{{ route('admin.tickets.edit', $ticket->id) }}"
+                           class="text-purple-600 hover:text-purple-900 font-medium hover:underline">
+                            {{ Str::limit($ticket->title, 50) }}
+                        </a>
+                    @else
+                        <a href="{{ route('tickets.show', $ticket->id) }}"
+                           class="text-purple-600 hover:text-purple-900 font-medium hover:underline">
+                            {{ Str::limit($ticket->title, 50) }}
+                        </a>
+                    @endif
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap" data-status="{{ strtolower($ticket->status->name) }}">
                     @php

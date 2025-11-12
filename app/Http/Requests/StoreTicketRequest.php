@@ -25,12 +25,15 @@ class StoreTicketRequest extends FormRequest
             'title' => 'required|string|max:255',
             'description' => 'required|string',
             'priority_id' => 'required|exists:priorities,id',
+            'status_id' => 'required|exists:statuses,id',
+            'user_id' => 'sometimes|exists:users,id',
             'categories' => 'required|array',
             'categories.*' => 'exists:categories,id',
             'labels' => 'required|array',
             'labels.*' => 'exists:labels,id',
             'attachments' => 'nullable|array',
             'attachments.*' => 'file|max:10240|mimes:jpg,jpeg,png,pdf,doc,docx,txt',
+            'assigned_to' => 'nullable|exists:users,id',
         ];
     }
 
@@ -40,6 +43,7 @@ class StoreTicketRequest extends FormRequest
             'title.required' => 'The title field is required.',
             'description.required' => 'The description field is required.',
             'priority_id.required' => 'Please select a priority.',
+            'status_id.required' => 'Please select a status.',
             'categories.required' => 'Please select at least one category.',
             'labels.required' => 'Please select at least one label.',
             'attachments.*.max' => 'Each attachment must not exceed 10MB.',

@@ -5,6 +5,9 @@ namespace App\Services;
 use App\Interfaces\TicketRepositoryInterface;
 use Illuminate\Support\Facades\DB;
 use App\Services\AttachmentService;
+use App\Models\Ticket;
+use App\Models\TicketLog;
+use Illuminate\Support\Facades\Auth;
 
 class TicketService
 {
@@ -52,6 +55,14 @@ class TicketService
                     $this->attachmentService->uploadAttachment($ticket, $file);
                 }
             }
+
+            TicketLog::create([
+                'ticket_id' => $ticket->id,
+                'user_id' => $data['user_id'],
+                'action' => 'created',
+                'changes' => $ticket->toArray(),
+            ]);
+
             DB::commit();
             return $ticket->load([
                 'labels',
@@ -67,9 +78,90 @@ class TicketService
         }
     }
 
-    public function updateTicket($id, array $data)
+    public function updateTicket(Ticket $ticket, array $data)
     {
-        return $this->ticketRepository->update($id, $data);
+        DB::beginTransaction();
+        try {
+            $ticket->fill([
+                'title' => $data['title'] ?? $ticket->title,
+                'description' => $data['description'] ?? $ticket->description,
+                'user_id' => $data['user_id'] ?? $ticket->user_id,
+                'priority_id' => $data['priority_id'] ?? $ticket->priority_id,
+                'status_id' => $data['status_id'] ?? $ticket->status_id,
+                'assigned_to' => $data['assigned_to'] ?? $ticket->assigned_to,
+            ]);
+
+            $hasModelChanges = $ticket->isDirty();
+
+            // compare categories/labels (produce arrays for possible log)
+            $currentCategories = $ticket->relationLoaded('categories')
+                ? $ticket->categories->pluck('id')->map('strval')->sort()->values()->all()
+                : $ticket->categories()->pluck('categories.id')->map('strval')->sort()->values()->all();
+
+            $incomingCategories = isset($data['categories'])
+                ? collect($data['categories'])->map('strval')->sort()->values()->all()
+                : $currentCategories;
+
+            $shouldSyncCategories = $currentCategories !== $incomingCategories;
+
+            $currentLabels = $ticket->relationLoaded('labels')
+                ? $ticket->labels->pluck('id')->map('strval')->sort()->values()->all()
+                : $ticket->labels()->pluck('labels.id')->map('strval')->sort()->values()->all();
+
+            $incomingLabels = isset($data['labels'])
+                ? collect($data['labels'])->map('strval')->sort()->values()->all()
+                : $currentLabels;
+
+            $shouldSyncLabels = $currentLabels !== $incomingLabels;
+
+            if (! $hasModelChanges && ! $shouldSyncCategories && ! $shouldSyncLabels) {
+                DB::commit();
+                return $ticket->fresh(['labels','categories','attachments','status','priority','user']);
+            }
+
+            if ($hasModelChanges) {
+                $ticket->save();
+            }
+
+            if ($shouldSyncCategories && method_exists($ticket, 'categories')) {
+                $ticket->categories()->sync($incomingCategories);
+            }
+
+            if ($shouldSyncLabels && method_exists($ticket, 'labels')) {
+                $ticket->labels()->sync($incomingLabels);
+            }
+
+            $modelChanges = $ticket->getChanges(); 
+            $relationChanges = [];
+            if ($shouldSyncCategories) {
+                $relationChanges['categories'] = [
+                    'before' => $currentCategories,
+                    'after' => $incomingCategories,
+                ];
+            }
+            if ($shouldSyncLabels) {
+                $relationChanges['labels'] = [
+                    'before' => $currentLabels,
+                    'after' => $incomingLabels,
+                ];
+            }
+
+            TicketLog::create([
+                'ticket_id' => $ticket->id,
+                'user_id' => Auth::id(),
+                'action' => 'updated',
+                'changes' => array_filter([
+                    'attributes' => $modelChanges ?: null,
+                    'relations' => $relationChanges ?: null,
+                ]),
+            ]);
+
+            DB::commit();
+            return $ticket->fresh(['labels','categories','attachments','status','priority','user']);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            throw $e;
+        }
     }
 
     public function deleteTicket($id)
