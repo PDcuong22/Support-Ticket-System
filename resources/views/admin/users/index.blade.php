@@ -33,10 +33,11 @@
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{{ $user->email }}</td>
 
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                            <form method="POST" >
+                            <form method="POST" action="{{ route('admin.users.updateRole', $user) }}" onsubmit="return confirmRoleSubmit(this);">
                                 @csrf
                                 @method('PATCH')
-                                <select name="role_id" class="border rounded px-2 py-1">
+                                <label for="role-{{ $user->id }}" class="sr-only">Role for {{ $user->name }}</label>
+                                <select id="role-{{ $user->id }}" name="role_id" data-current="{{ optional($user->role)->id }}" onchange="return confirmRoleChange(this)" class="border rounded px-2 py-1" aria-label="Change role for {{ $user->name }}">
                                     <option value="">-- None --</option>
                                     @foreach($roles as $role)
                                         <option value="{{ $role->id }}" {{ (old('role_id', optional($user->role)->id) == $role->id) ? 'selected' : '' }}>
@@ -65,9 +66,37 @@
             </tbody>
         </table>
 
-        <div class="p-4">
-            {{ $users->links() }}
-        </div>
     </div>
 </div>
+
+@push('scripts')
+<script>
+    function confirmRoleChange(select) {
+        const form = select.form;
+        const current = select.dataset.current ?? '';
+        const newVal = select.value;
+        if (String(current) === String(newVal)) {
+            return false; 
+        }
+        const roleText = select.options[select.selectedIndex].text;
+        const ok = confirm('Change role for this user to "' + roleText + '"?');
+        if (!ok) {
+            select.value = current;
+            return false;
+        }
+        form.submit();
+        return true;
+    }
+
+    function confirmRoleSubmit(form) {
+        const select = form.querySelector('select[name="role_id"]');
+        if (!select) return true;
+        const current = select.dataset.current ?? '';
+        const newVal = select.value;
+        if (String(current) === String(newVal)) return false;
+        return confirm('Confirm role change?');
+    }
+</script>
+@endpush
+
 @endsection

@@ -2,4 +2,6 @@
 
 namespace App\Interfaces;
 
-interface CategoryRepositoryInterface extends BaseRepositoryInterface {}
+interface CategoryRepositoryInterface extends BaseRepositoryInterface {
+    public function countAll() : int;
+}

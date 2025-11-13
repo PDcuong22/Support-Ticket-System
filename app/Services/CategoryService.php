@@ -32,4 +32,9 @@ class CategoryService
     {
         return $this->categoryRepository->delete($id);
     }
+
+    public function countAll() : int
+    {
+        return $this->categoryRepository->countAll();
+    }
 }

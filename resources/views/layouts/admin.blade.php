@@ -32,5 +32,7 @@
             </main>
         </div>
     </div>
+    {{-- Footer Scripts --}}
+    @stack('scripts')
 </body>
 </html>

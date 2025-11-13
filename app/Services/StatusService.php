@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Interfaces\StatusRepositoryInterface;
+use Illuminate\Database\Eloquent\Model;
 
 class StatusService
 {
@@ -31,5 +32,10 @@ class StatusService
     public function deleteStatus($id)
     {
         return $this->statusRepository->delete($id);
+    }
+
+    public function getStatusByName(string $name): ?Model
+    {
+        return $this->statusRepository->findByName($name);
     }
 }

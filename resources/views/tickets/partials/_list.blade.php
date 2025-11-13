@@ -1,45 +1,66 @@
-{{-- Filters --}}
-<div class="mb-6 flex flex-wrap gap-4">
+@php
+    $formAction = $formAction ?? request()->url();
+    $activeStatus = $status ?? request('status') ?? '';
+    $activePriority = request('priority') ?? '';
+    $activeCategory = request('category') ?? '';
+@endphp
+
+{{-- Filters: server-side (GET) --}}
+<form id="tickets-filter-form" method="GET" action="{{ $formAction }}" class="mb-6 flex flex-wrap gap-4">
     {{-- Search Input --}}
     <div class="flex-1 min-w-[200px]">
-        <input type="text" id="search" placeholder="Search tickets..."
-            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500">
+        <input type="text" id="search" name="q" placeholder="Search tickets..."
+            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500"
+            value="{{ request('q', '') }}">
     </div>
 
     {{-- Status Filter --}}
-    <select id="status-filter"
+    <select id="status-filter" name="status"
         class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500">
         <option value="">All Status</option>
-        @foreach($statuses as $status)
-        <option value="{{ strtolower($status->name) }}">
-            {{ $status->name }}
-        </option>
+        @foreach($statuses as $s)
+            @php
+                $val = strtolower($s->name);
+                $selected = false;
+                if ($activeStatus !== '') {
+                    if (is_numeric($activeStatus) && (int)$activeStatus === $s->id) {
+                        $selected = true;
+                    } elseif (strtolower((string)$activeStatus) === $val) {
+                        $selected = true;
+                    } elseif (strtolower((string)$activeStatus) === strtolower($s->name)) {
+                        $selected = true;
+                    }
+                }
+            @endphp
+            <option value="{{ $val }}" {{ $selected ? 'selected' : '' }}>{{ $s->name }}</option>
         @endforeach
     </select>
 
     {{-- Priority Filter --}}
-    <select id="priority-filter"
+    <select id="priority-filter" name="priority"
         class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500">
         <option value="">All Priority</option>
-        @foreach($priorities as $priority)
-        <option value="{{ strtolower($priority->name) }}">
-            {{ $priority->name }}
-        </option>
+        @foreach($priorities as $p)
+            <option value="{{ strtolower($p->name) }}" {{ strtolower($activePriority) === strtolower($p->name) ? 'selected' : '' }}>
+                {{ $p->name }}
+            </option>
         @endforeach
     </select>
 
     {{-- Category Filter --}}
-    <select id="category-filter"
+    <select id="category-filter" name="category"
         class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500">
         <option value="">All Categories</option>
-        @foreach($categories as $category)
-        <option value="{{ strtolower($category->name) }}">
-            {{ $category->name }}
-        </option>
+        @foreach($categories as $c)
+            <option value="{{ strtolower($c->name) }}" {{ strtolower($activeCategory) === strtolower($c->name) ? 'selected' : '' }}>
+                {{ $c->name }}
+            </option>
         @endforeach
     </select>
 
-</div>
+    {{-- Submit button for accessibility (hidden visually) --}}
+    <button type="submit" class="sr-only" aria-hidden="true">Apply filters</button>
+</form>
 
 {{-- Table --}}
 <div class="overflow-x-auto">
@@ -153,7 +174,7 @@
                 @if($isAdminView)
                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                     <div class="flex items-center space-x-2">
-                        <form method="POST" onsubmit="return confirm('Are you sure you want to delete this ticket?');">
+                        <form method="POST" action="{{ route('admin.tickets.destroy', $ticket) }}" onsubmit="return confirm('Are you sure you want to delete this ticket?');">
                             @csrf
                             @method('DELETE')
                             <button type="submit" class="text-red-600 hover:text-red-900">Delete</button>
@@ -183,40 +204,32 @@
     </table>
 </div>
 
-{{-- Custom Scripts --}}
+{{-- Auto-submit filters JS --}}
 <script>
-    function filterTickets() {
-        const searchTerm = document.getElementById('search').value.toLowerCase();
-        const statusFilter = document.getElementById('status-filter').value.toLowerCase();
-        const priorityFilter = document.getElementById('priority-filter').value.toLowerCase();
-        const categoryFilter = document.getElementById('category-filter').value.toLowerCase();
+document.addEventListener('DOMContentLoaded', function () {
+    const form = document.getElementById('tickets-filter-form');
+    if (!form) return;
 
-        const rows = document.querySelectorAll('[data-ticket-row]');
+    // Submit when any select changes
+    form.querySelectorAll('select').forEach(function (sel) {
+        sel.addEventListener('change', function () {
+            // remove page param when changing filters
+            const pageInput = form.querySelector('input[name="page"]');
+            if (pageInput) pageInput.remove();
+            form.submit();
+        });
+    });
 
-        rows.forEach(row => {
-            // Get data from row
-            const title = row.querySelector('[data-title]')?.textContent.toLowerCase() || '';
-            const status = row.querySelector('[data-status]')?.dataset.status || '';
-            const priority = row.querySelector('[data-priority]')?.dataset.priority || '';
-            const categories = row.querySelector('[data-categories]')?.dataset.categories || '';
-
-            // Check filters
-            const matchesSearch = title.includes(searchTerm);
-            const matchesStatus = !statusFilter || status === statusFilter;
-            const matchesPriority = !priorityFilter || priority === priorityFilter;
-            const matchesCategory = !categoryFilter || categories.split(',').includes(categoryFilter);
-
-            // Show/hide row
-            if (matchesSearch && matchesStatus && matchesPriority && matchesCategory) {
-                row.style.display = '';
-            } else {
-                row.style.display = 'none';
+    // Submit on Enter in search input
+    const search = document.getElementById('search');
+    if (search) {
+        search.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter') {
+                const pageInput = form.querySelector('input[name="page"]');
+                if (pageInput) pageInput.remove();
+                // allow form submit
             }
         });
     }
-
-    document.getElementById('search').addEventListener('input', filterTickets);
-    document.getElementById('status-filter').addEventListener('change', filterTickets);
-    document.getElementById('priority-filter').addEventListener('change', filterTickets);
-    document.getElementById('category-filter').addEventListener('change', filterTickets);
+});
 </script>

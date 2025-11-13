@@ -14,4 +14,9 @@ class CategoryRepository extends BaseRepository implements CategoryRepositoryInt
     {
         $this->model = $model;
     }
+
+    public function countAll() : int
+    {
+        return $this->model->count();
+    }
 }

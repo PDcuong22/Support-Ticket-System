@@ -7,7 +7,7 @@ use App\Services\TicketService;
 use App\Services\LabelService;
 use App\Services\StatusService;
 use App\Services\PriorityService;
-use App\Services\CategoryService; 
+use App\Services\CategoryService;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -33,13 +33,25 @@ class TicketController extends Controller
 
     public function index()
     {
-        $tickets = $this->ticketService->getAllTickets();
+        $query = $this->ticketService->getAllTicketsWithRelations(['status', 'priority', 'categories', 'labels']);
+
+        $user = Auth::user();
+
+        if ($user && optional($user->role)->name === 'Support Agent') {
+            $query->where('assigned_user_id', $user->id);
+        } elseif ($user && optional($user->role)->name === 'User') {
+            $query->where('user_id', $user->id);
+        }
+
+
+        $tickets = $query->orderBy('created_at', 'desc')->paginate(15)->withQueryString();
+
         return view('tickets.index', compact('tickets'));
     }
 
     public function show($id)
     {
-        $ticket = $this->ticketService->getTicketById($id);
+        $ticket = $this->ticketService->getTicketWithRelations($id, ['status', 'priority', 'categories', 'labels', 'attachments']);
         return view('tickets.show', compact('ticket'));
     }
 
@@ -62,5 +74,4 @@ class TicketController extends Controller
             return back()->withErrors(['error' => 'Failed to create ticket: ' . $e->getMessage()]);
         }
     }
-
 }

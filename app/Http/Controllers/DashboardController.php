@@ -17,7 +17,16 @@ class DashboardController extends Controller
 
     public function index()
     {
-        $userTicketCount = $this->ticketService->getUserTicketCount(Auth::id());
+        $user = Auth::user();
+        $userTicketCount = 0;
+        if (! $user) {
+            return redirect()->route('login');
+        }
+        if (optional($user->role)->name === 'User') {
+            $userTicketCount = $this->ticketService->getUserTicketCount($user->id);
+        } elseif(optional($user->role)->name === 'Support Agent') {
+            $userTicketCount = $this->ticketService->getAssignedTicketCount($user->id);
+        } 
         return view('dashboard', compact('userTicketCount'));
     }
 }

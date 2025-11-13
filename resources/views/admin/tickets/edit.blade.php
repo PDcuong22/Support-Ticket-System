@@ -19,11 +19,11 @@
 
             {{-- ASSIGN TO --}}
             <div>
-                <label for="assigned_to" class="block text-sm font-medium text-gray-700">Assign To</label>
-                <select name="assigned_to" id="assigned_to" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-purple-500 focus:border-purple-500">
+                <label for="assigned_user_id" class="block text-sm font-medium text-gray-700">Assign To</label>
+                <select name="assigned_user_id" id="assigned_user_id" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-purple-500 focus:border-purple-500">
                     <option value="">-- Unassigned --</option>
                     @foreach($agents as $agent)
-                    <option value="{{ $agent->id }}" {{ old('assigned_to', $ticket->assigned_to) == $agent->id ? 'selected' : '' }}>
+                    <option value="{{ $agent->id }}" {{ old('assigned_user_id', $ticket->assigned_user_id) == $agent->id ? 'selected' : '' }}>
                         {{ $agent->name }} ({{ $agent->role->name }})
                     </option>
                     @endforeach
@@ -156,7 +156,7 @@
 
         {{-- Submit Button --}}
         <div class="mt-6 flex justify-end">
-            <a href="{{ route('admin.tickets') }}" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-md mr-2 hover:bg-gray-300">Cancel</a>
+            <a href="{{ route('admin.tickets.index') }}" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-md mr-2 hover:bg-gray-300">Cancel</a>
             <button type="submit" class="bg-purple-600 text-white px-4 py-2 rounded-md hover:bg-purple-700">Update Ticket</button>
         </div>
     </form>

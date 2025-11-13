@@ -2,6 +2,7 @@
 
 namespace App\Repositories;
 
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 
 abstract class BaseRepository
@@ -13,22 +14,38 @@ abstract class BaseRepository
         $this->model = $model;
     }
 
-    public function all()
+    /**
+     * @return Collection<int, Model>
+     */
+    public function all() : Collection
     {
         return $this->model->all();
     }
 
-    public function find($id)
+    /**
+     * @param mixed $id
+     * @return Model|null
+     */
+    public function find($id) : ?Model
     {
         return $this->model->find($id);
     }
 
-    public function create(array $data)
+    /**
+     * @param array $data
+     * @return Model
+     */
+    public function create(array $data) : Model
     {
         return $this->model->create($data);
     }
 
-    public function update($id, array $data)
+    /**
+     * @param mixed $id
+     * @param array $data
+     * @return Model|null
+     */
+    public function update($id, array $data) : ?Model
     {
         $record = $this->find($id);
         if ($record) {
@@ -38,11 +55,15 @@ abstract class BaseRepository
         return null;
     }
 
-    public function delete($id)
+    /**
+     * @param mixed $id
+     * @return bool
+     */
+    public function delete($id) : bool
     {
         $record = $this->find($id);
         if ($record) {
-            return $record->delete();
+            return (bool) $record->delete();
         }
         return false;
     }

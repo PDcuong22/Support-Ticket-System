@@ -32,4 +32,9 @@ class LabelService
     {
         return $this->labelRepository->delete($id);
     }
+
+    public function countAll() : int
+    {
+        return $this->labelRepository->countAll();
+    }
 }

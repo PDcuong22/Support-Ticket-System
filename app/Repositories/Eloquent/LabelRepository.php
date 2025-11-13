@@ -14,4 +14,9 @@ class LabelRepository extends BaseRepository implements LabelRepositoryInterface
     {
         $this->model = $model;
     }
+
+    public function countAll() : int
+    {
+        return $this->model->count();
+    }
 }

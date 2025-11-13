@@ -33,7 +33,7 @@ class StoreTicketRequest extends FormRequest
             'labels.*' => 'exists:labels,id',
             'attachments' => 'nullable|array',
             'attachments.*' => 'file|max:10240|mimes:jpg,jpeg,png,pdf,doc,docx,txt',
-            'assigned_to' => 'nullable|exists:users,id',
+            'assigned_user_id' => 'sometimes|nullable|exists:users,id',
         ];
     }
 

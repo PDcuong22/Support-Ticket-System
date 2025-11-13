@@ -2,4 +2,8 @@
 
 namespace App\Interfaces;
 
-interface AttachmentRepositoryInterface extends BaseRepositoryInterface {}
+use Illuminate\Database\Eloquent\Collection;
+
+interface AttachmentRepositoryInterface extends BaseRepositoryInterface {
+    public function getByTicket($ticketId) : Collection;
+}

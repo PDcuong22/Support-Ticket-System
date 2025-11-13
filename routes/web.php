@@ -19,7 +19,7 @@ Route::get('/', function () {
 
 Route::get('/dashboard', [DashboardController::class, 'index'])->middleware(['auth', 'verified'])->name('dashboard');
 
-Route::middleware(['auth', 'role:User'])->group(function () {
+Route::middleware(['auth'])->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
@@ -35,15 +35,14 @@ Route::middleware(['auth', 'role:User'])->group(function () {
 
 Route::middleware(['auth', 'role:Admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
-    Route::get('/tickets', [AdminDashboardController::class, 'tickets'])->name('tickets');
-    Route::get('/tickets/{id}/edit', [AdminTicketController::class, 'edit'])->name('tickets.edit');
-    Route::patch('/tickets/{ticket}', [AdminTicketController::class, 'update'])->name('tickets.update');
-    Route::get('/users', [AdminDashboardController::class, 'users'])->name('users');
     Route::get('/ticket-logs', [TicketLogController::class, 'index'])->name('ticket-logs.index');
 
+    Route::resource('tickets', AdminTicketController::class);
     Route::resource('labels', LabelController::class);
     Route::resource('categories', CategoryController::class);
     Route::resource('users', UserController::class);
+
+    Route::patch('users/{user}/update-role', [UserController::class, 'updateRole'])->name('users.updateRole');
 });
 
 require __DIR__ . '/auth.php';

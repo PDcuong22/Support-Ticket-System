@@ -2,4 +2,8 @@
 
 namespace App\Interfaces;
 
-interface StatusRepositoryInterface extends BaseRepositoryInterface {}
+use Illuminate\Database\Eloquent\Model;
+
+interface StatusRepositoryInterface extends BaseRepositoryInterface {
+    public function findByName(string $name) : ?Model;
+}

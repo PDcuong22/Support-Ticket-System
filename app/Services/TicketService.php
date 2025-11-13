@@ -7,30 +7,68 @@ use Illuminate\Support\Facades\DB;
 use App\Services\AttachmentService;
 use App\Models\Ticket;
 use App\Models\TicketLog;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Log;
+use Throwable;
 
 class TicketService
 {
     protected $ticketRepository;
     protected $attachmentService;
+    protected $ticketUpdater;
+    protected $statusService;
 
-    public function __construct(TicketRepositoryInterface $ticketRepository, AttachmentService $attachmentService)
+    public function __construct(TicketRepositoryInterface $ticketRepository, AttachmentService $attachmentService, \App\Services\TicketUpdater $ticketUpdater, StatusService $statusService)
     {
         $this->ticketRepository = $ticketRepository;
         $this->attachmentService = $attachmentService;
+        $this->ticketUpdater = $ticketUpdater;
+        $this->statusService = $statusService;
     }
 
-    public function getAllTickets()
+    /**
+     * Get all tickets.
+     * 
+     * @return Collection
+     */
+    public function getAllTickets(): Collection
     {
         return $this->ticketRepository->all();
     }
 
-    public function getTicketById($id)
+    /**
+     * Get all tickets with specified relations loaded.
+     * 
+     * @param array $relations
+     * @return Builder
+     */
+    public function getAllTicketsWithRelations(array $relations): Builder
+    {
+        return $this->ticketRepository->allWith($relations);
+    }
+
+    /**
+     * Get a ticket by its ID.
+     * 
+     * @param int $id
+     * @return Ticket|null
+     */
+    public function getTicketById(int $id): ?Ticket
     {
         return $this->ticketRepository->find($id);
     }
 
-    public function createTicket(array $data)
+    /**
+     * Create a new ticket with associated data.
+     * 
+     * @param array $data
+     * @return Ticket
+     * @throws \Exception
+     */
+    public function createTicket(array $data): Ticket
     {
         DB::beginTransaction();
         try {
@@ -78,60 +116,41 @@ class TicketService
         }
     }
 
-    public function updateTicket(Ticket $ticket, array $data)
+    /**
+     * Update a ticket with given data.
+     * 
+     * @param Ticket $ticket
+     * @param array $data
+     * @return Ticket|null
+     * @throws \Exception
+     */
+    public function updateTicket(Ticket $ticket, array $data): ?Ticket
     {
         DB::beginTransaction();
         try {
-            $ticket->fill([
-                'title' => $data['title'] ?? $ticket->title,
-                'description' => $data['description'] ?? $ticket->description,
-                'user_id' => $data['user_id'] ?? $ticket->user_id,
-                'priority_id' => $data['priority_id'] ?? $ticket->priority_id,
-                'status_id' => $data['status_id'] ?? $ticket->status_id,
-                'assigned_to' => $data['assigned_to'] ?? $ticket->assigned_to,
-            ]);
+            $hasModelChanges = $this->ticketUpdater->fillTicket($ticket, $data);
 
-            $hasModelChanges = $ticket->isDirty();
-
-            // compare categories/labels (produce arrays for possible log)
-            $currentCategories = $ticket->relationLoaded('categories')
-                ? $ticket->categories->pluck('id')->map('strval')->sort()->values()->all()
-                : $ticket->categories()->pluck('categories.id')->map('strval')->sort()->values()->all();
-
-            $incomingCategories = isset($data['categories'])
-                ? collect($data['categories'])->map('strval')->sort()->values()->all()
-                : $currentCategories;
-
-            $shouldSyncCategories = $currentCategories !== $incomingCategories;
-
-            $currentLabels = $ticket->relationLoaded('labels')
-                ? $ticket->labels->pluck('id')->map('strval')->sort()->values()->all()
-                : $ticket->labels()->pluck('labels.id')->map('strval')->sort()->values()->all();
-
-            $incomingLabels = isset($data['labels'])
-                ? collect($data['labels'])->map('strval')->sort()->values()->all()
-                : $currentLabels;
-
-            $shouldSyncLabels = $currentLabels !== $incomingLabels;
+            [$currentCategories, $incomingCategories, $shouldSyncCategories] = $this->ticketUpdater->compareCategories($ticket, $data);
+            [$currentLabels, $incomingLabels, $shouldSyncLabels] = $this->ticketUpdater->compareLabels($ticket, $data);
 
             if (! $hasModelChanges && ! $shouldSyncCategories && ! $shouldSyncLabels) {
                 DB::commit();
-                return $ticket->fresh(['labels','categories','attachments','status','priority','user']);
+                return $ticket->fresh(['labels', 'categories', 'attachments', 'status', 'priority', 'user']);
             }
 
             if ($hasModelChanges) {
                 $ticket->save();
             }
 
-            if ($shouldSyncCategories && method_exists($ticket, 'categories')) {
-                $ticket->categories()->sync($incomingCategories);
+            if ($shouldSyncCategories) {
+                $this->ticketUpdater->syncCategories($ticket, $incomingCategories);
             }
 
-            if ($shouldSyncLabels && method_exists($ticket, 'labels')) {
-                $ticket->labels()->sync($incomingLabels);
+            if ($shouldSyncLabels) {
+                $this->ticketUpdater->syncLabels($ticket, $incomingLabels);
             }
 
-            $modelChanges = $ticket->getChanges(); 
+            $modelChanges = $ticket->getChanges();
             $relationChanges = [];
             if ($shouldSyncCategories) {
                 $relationChanges['categories'] = [
@@ -146,31 +165,101 @@ class TicketService
                 ];
             }
 
-            TicketLog::create([
-                'ticket_id' => $ticket->id,
-                'user_id' => Auth::id(),
-                'action' => 'updated',
-                'changes' => array_filter([
-                    'attributes' => $modelChanges ?: null,
-                    'relations' => $relationChanges ?: null,
-                ]),
-            ]);
+            $this->ticketUpdater->logUpdate($ticket, $modelChanges, $relationChanges);
 
             DB::commit();
-            return $ticket->fresh(['labels','categories','attachments','status','priority','user']);
+            return $ticket->fresh(['labels', 'categories', 'attachments', 'status', 'priority', 'user']);
         } catch (\Exception $e) {
             DB::rollBack();
             throw $e;
         }
     }
 
-    public function deleteTicket($id)
+    /**
+     * Delete a ticket along with its attachments.
+     * 
+     * @param Ticket $ticket
+     * @return bool
+     * @throws Throwable
+     */
+    public function deleteTicket(Ticket $ticket): bool
     {
-        return $this->ticketRepository->delete($id);
+        try {
+            $ticket = $this->ticketRepository->find($ticket->id) ?? $ticket;
+
+            $ok = $this->attachmentService->deleteAttachmentsForTicket($ticket);
+            if (! $ok) {
+                throw new \RuntimeException('Failed to delete attachments for ticket: ' . ($ticket->id ?? 'unknown'));
+            }
+
+            $result = $this->ticketRepository->delete($ticket->id);
+            return $result;
+        } catch (Throwable $e) {
+            Log::error('Ticket deletion failed', [
+                'ticket_id' => $ticket->id ?? null,
+                'error' => $e->getMessage(),
+            ]);
+            throw $e;
+        }
     }
 
-    public function getUserTicketCount($userId)
+    /**
+     * Get the count of tickets for a specific user.
+     * 
+     * @param mixed $userId
+     * @return int
+     */
+    public function getUserTicketCount($userId): int
     {
         return $this->ticketRepository->countByUserId($userId);
+    }
+
+    /**
+     * Get the count of tickets assigned to a specific user.
+     * 
+     * @param mixed $userId
+     * @return int
+     */
+    public function getAssignedTicketCount($userId): int
+    {
+        return $this->ticketRepository->countByAssignedUserId($userId);
+    }
+
+    /**
+     * Get a ticket with specified relations loaded.
+     * 
+     * @param int $id
+     * @param array $relations
+     * @return Ticket|null
+     */
+    public function getTicketWithRelations(int $id, array $relations = []): ?Ticket
+    {
+        return $this->ticketRepository->findWithRelations($id, $relations);
+    }
+
+    /**
+     * Get the total count of tickets.
+     * 
+     * @return int
+     */
+    public function getTotalTicketCount() : int
+    {
+        return $this->ticketRepository->countAll();
+    }
+
+    /**
+     * Get the count of tickets by status.
+     * 
+     * @param string $status
+     * @return int
+     */
+    public function getTicketCountByStatus(string $status) : int
+    {
+        $statusModel = $this->statusService->getStatusByName($status);
+        if (!$statusModel) {
+            return 0;
+        }
+
+        return $this->ticketRepository->countByStatus($statusModel->id);
     }
 }

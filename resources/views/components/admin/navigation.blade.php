@@ -12,7 +12,7 @@
     </a>
 
     {{-- Tickets --}}
-    <a href="{{ route('admin.tickets') }}"
+    <a href="{{ route('admin.tickets.index') }}"
        class="group flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 {{ request()->routeIs('admin.tickets*') ? 'bg-white text-purple-900 shadow-lg' : 'text-purple-100 hover:bg-white/10 hover:text-white' }}">
         <div class="w-9 h-9 rounded-lg flex items-center justify-center {{ request()->routeIs('admin.tickets*') ? 'bg-purple-100' : 'bg-white/10 group-hover:bg-white/20' }} transition-colors">
             <svg class="w-5 h-5 {{ request()->routeIs('admin.tickets*') ? 'text-purple-900' : 'text-purple-100' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
