@@ -27,15 +27,32 @@ class AdminTicketController extends Controller
     public function index(Request $request)
     {
         $status = $request->query('status'); 
-        $query = $this->ticketService->getAllTicketsWithRelations(['status', 'priority', 'categories', 'labels']);
+        $priority = $request->query('priority');
+        $category = $request->query('category');
+
+        $query = $this->ticketService->getAllTicketsWithRelations(['status', 'priority', 'categories', 'labels', 'assignedUser']);
 
         if (! empty($status)) {
-            $statusModel = $this->statusService->getStatusByName($status);
-            if ($statusModel) {
-                $query->where('status_id', $statusModel->id);
+            if (is_numeric($status)) {
+                $query->where('status_id', (int) $status);
+            } else {
+                $statusModel = $this->statusService->getStatusByName($status);
+                if ($statusModel) {
+                    $query->where('status_id', $statusModel->id);
+                }
             }
         }
 
+        if (! empty($priority)){
+            $query->where('priority_id', $priority);
+        }
+
+        if (! empty($category)) {
+            $query->whereHas('categories', function ($q) use ($category) {
+                $q->where('categories.id', $category);
+            });
+        }
+        
         $tickets = $query->orderBy('created_at', 'desc')->paginate(20)->withQueryString();
 
         return view('admin.tickets.index', compact('tickets', 'status'));

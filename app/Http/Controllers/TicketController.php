@@ -31,18 +31,34 @@ class TicketController extends Controller
         $this->categoryService = $categoryService;
     }
 
-    public function index()
+    public function index(Request $request)
     {
+        $statusId = $request->query('status');
+        $priorityId = $request->query('priority');
+        $categoryId = $request->query('category');
+
         $query = $this->ticketService->getAllTicketsWithRelations(['status', 'priority', 'categories', 'labels']);
 
         $user = Auth::user();
-
         if ($user && optional($user->role)->name === 'Support Agent') {
             $query->where('assigned_user_id', $user->id);
         } elseif ($user && optional($user->role)->name === 'User') {
             $query->where('user_id', $user->id);
         }
 
+        if (! empty($statusId)) {
+            $query->where('status_id', $statusId);
+        }
+
+        if (! empty($priorityId)) {
+            $query->where('priority_id', $priorityId);
+        }
+
+        if (! empty($categoryId)) {
+            $query->whereHas('categories', function ($q) use ($categoryId) {
+                $q->where('categories.id', $categoryId);
+            });
+        }
 
         $tickets = $query->orderBy('created_at', 'desc')->paginate(15)->withQueryString();
 
