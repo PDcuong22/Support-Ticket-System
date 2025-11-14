@@ -27,6 +27,6 @@ class RoleMiddleware
             return $next($request);
         }
 
-        return response('Unauthorized.', 403);
+        return redirect()->route('login');
     }
 }

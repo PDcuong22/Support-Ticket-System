@@ -3,16 +3,20 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreTicketRequest;
+use App\Mail\NewTicketCreated;
 use App\Services\TicketService;
 use App\Services\LabelService;
 use App\Services\StatusService;
 use App\Services\PriorityService;
 use App\Services\CategoryService;
+use App\Services\UserService;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
+
 use App\Models\Ticket;
+use Illuminate\Support\Facades\Mail;
 
 class TicketController extends Controller
 {
@@ -21,14 +25,16 @@ class TicketController extends Controller
     protected $statusService;
     protected $priorityService;
     protected $categoryService;
+    protected $userService;
 
-    public function __construct(TicketService $ticketService, LabelService $labelService, StatusService $statusService, PriorityService $priorityService, CategoryService $categoryService)
+    public function __construct(TicketService $ticketService, LabelService $labelService, StatusService $statusService, PriorityService $priorityService, CategoryService $categoryService, UserService $userService)
     {
         $this->ticketService = $ticketService;
         $this->labelService = $labelService;
         $this->statusService = $statusService;
         $this->priorityService = $priorityService;
         $this->categoryService = $categoryService;
+        $this->userService = $userService;
     }
 
     public function index(Request $request)
@@ -84,6 +90,11 @@ class TicketController extends Controller
             $validatedData['status_id'] = 1;
 
             $ticket = $this->ticketService->createTicket($validatedData);
+
+            $admins = $this->userService->getUsersByRole('Admin');
+            foreach ($admins as $admin) {
+                Mail::to($admin->email)->queue(new NewTicketCreated($ticket));
+            }
 
             return redirect()->route('tickets.show', compact('ticket'));
         } catch (\Exception $e) {
