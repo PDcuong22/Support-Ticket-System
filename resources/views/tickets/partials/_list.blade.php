@@ -1,23 +1,23 @@
 @php
-    $formAction = $formAction ?? request()->url();
-    $activeStatus = $status ?? request('status') ?? '';
-    $activePriority = $priority ?? request('priority') ?? '';
-    $activeCategory = $category ?? request('category') ?? '';
+$formAction = $formAction ?? request()->url();
+$activeStatus = $status ?? request('status') ?? '';
+$activePriority = $priority ?? request('priority') ?? '';
+$activeCategory = $category ?? request('category') ?? '';
 
-    if (!empty($activeStatus) && !is_numeric($activeStatus)) {
-        $found = collect($statuses)->first(fn($s) => strtolower($s->name) === strtolower($activeStatus) || (isset($s->slug) && strtolower($s->slug) === strtolower($activeStatus)));
-        if ($found) $activeStatus = (string) $found->id;
-    }
+if (!empty($activeStatus) && !is_numeric($activeStatus)) {
+$found = collect($statuses)->first(fn($s) => strtolower($s->name) === strtolower($activeStatus) || (isset($s->slug) && strtolower($s->slug) === strtolower($activeStatus)));
+if ($found) $activeStatus = (string) $found->id;
+}
 
-    if (!empty($activePriority) && !is_numeric($activePriority) && isset($priorities)) {
-        $foundP = collect($priorities)->first(fn($p) => strtolower($p->name) === strtolower($activePriority) || (isset($p->slug) && strtolower($p->slug) === strtolower($activePriority)));
-        if ($foundP) $activePriority = (string) $foundP->id;
-    }
+if (!empty($activePriority) && !is_numeric($activePriority) && isset($priorities)) {
+$foundP = collect($priorities)->first(fn($p) => strtolower($p->name) === strtolower($activePriority) || (isset($p->slug) && strtolower($p->slug) === strtolower($activePriority)));
+if ($foundP) $activePriority = (string) $foundP->id;
+}
 
-    if (!empty($activeCategory) && !is_numeric($activeCategory) && isset($categories)) {
-        $foundC = collect($categories)->first(fn($c) => strtolower($c->name) === strtolower($activeCategory) || (isset($c->slug) && strtolower($c->slug) === strtolower($activeCategory)));
-        if ($foundC) $activeCategory = (string) $foundC->id;
-    }
+if (!empty($activeCategory) && !is_numeric($activeCategory) && isset($categories)) {
+$foundC = collect($categories)->first(fn($c) => strtolower($c->name) === strtolower($activeCategory) || (isset($c->slug) && strtolower($c->slug) === strtolower($activeCategory)));
+if ($foundC) $activeCategory = (string) $foundC->id;
+}
 @endphp
 
 {{-- Filters: server-side (GET) --}}
@@ -34,33 +34,33 @@
         class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500">
         <option value="">All Status</option>
         @foreach($statuses as $s)
-            @php
-                $val = $s->id;
-                $selected = ((string)$activeStatus !== '' && (string)$activeStatus === (string)$s->id);
-            @endphp
-            <option value="{{ $val }}" {{ $selected ? 'selected' : '' }}>{{ $s->name }}</option>
+        @php
+        $val = $s->id;
+        $selected = ((string)$activeStatus !== '' && (string)$activeStatus === (string)$s->id);
+        @endphp
+        <option value="{{ $val }}" {{ $selected ? 'selected' : '' }}>{{ $s->name }}</option>
         @endforeach
     </select>
-    
+
     {{-- Priority Filter --}}
     <select id="priority-filter" name="priority"
         class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500">
         <option value="">All Priority</option>
         @foreach($priorities as $p)
-            <option value="{{ $p->id }}" {{ ((string)$activePriority === (string)$p->id) ? 'selected' : '' }}>
-                {{ $p->name }}
-            </option>
+        <option value="{{ $p->id }}" {{ ((string)$activePriority === (string)$p->id) ? 'selected' : '' }}>
+            {{ $p->name }}
+        </option>
         @endforeach
     </select>
-    
+
     {{-- Category Filter --}}
     <select id="category-filter" name="category"
         class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500">
         <option value="">All Categories</option>
         @foreach($categories as $c)
-            <option value="{{ $c->id }}" {{ ((string)$activeCategory === (string)$c->id) ? 'selected' : '' }}>
-                {{ $c->name }}
-            </option>
+        <option value="{{ $c->id }}" {{ ((string)$activeCategory === (string)$c->id) ? 'selected' : '' }}>
+            {{ $c->name }}
+        </option>
         @endforeach
     </select>
 
@@ -95,6 +95,8 @@
                 <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Assigned To
                 </th>
+                @endif
+                @if($isAdminView || (!empty($isAgent) && $isAgent))
                 <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Actions
                 </th>
@@ -109,15 +111,19 @@
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap" data-title>
                     @if(!empty($isAdminView) && $isAdminView)
-                        <a href="{{ route('admin.tickets.edit', $ticket->id) }}"
-                           class="text-purple-600 hover:text-purple-900 font-medium hover:underline">
+                    <a href="{{ route('admin.tickets.show', $ticket) }}"
+                        class="text-purple-600 hover:text-purple-900 font-medium hover:underline">
+                        <span class="ticket-title-text" data-full-title="{{ e($ticket->title) }}">
                             {{ Str::limit($ticket->title, 50) }}
-                        </a>
+                        </span>
+                    </a>
                     @else
-                        <a href="{{ route('tickets.show', $ticket->id) }}"
-                           class="text-purple-600 hover:text-purple-900 font-medium hover:underline">
+                    <a href="{{ route('tickets.show', $ticket->id) }}"
+                        class="text-purple-600 hover:text-purple-900 font-medium hover:underline">
+                        <span class="ticket-title-text" data-full-title="{{ e($ticket->title) }}">
                             {{ Str::limit($ticket->title, 50) }}
-                        </a>
+                        </span>
+                    </a>
                     @endif
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap" data-status="{{ strtolower($ticket->status->name) }}">
@@ -189,6 +195,15 @@
                     </div>
                 </td>
                 @endif
+
+                {{-- ACTIONS For AGENT --}}
+                @if(!empty($isAgent) && $isAgent)
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    <div class="flex items-center space-x-2">
+                        <a href="{{ route('admin.tickets.edit', $ticket) }}" class="text-purple-600 hover:text-purple-900">Edit</a>
+                    </div>
+                </td>
+                @endif
             </tr>
 
             @empty
@@ -210,110 +225,110 @@
                     </div>
                 </td>
             </tr>
-             @endforelse
+            @endforelse
         </tbody>
     </table>
 </div>
 
 {{-- Auto-submit filters JS --}}
 <script>
-document.addEventListener('DOMContentLoaded', function () {
-    const form = document.getElementById('tickets-filter-form');
-    if (!form) return;
+    document.addEventListener('DOMContentLoaded', function() {
+        const form = document.getElementById('tickets-filter-form');
+        if (!form) return;
 
-    function buildAndNavigate() {
-        const params = new URLSearchParams();
-        const status = (form.querySelector('[name="status"]')?.value || '').trim();
-        const priority = (form.querySelector('[name="priority"]')?.value || '').trim();
-        const category = (form.querySelector('[name="category"]')?.value || '').trim();
+        function buildAndNavigate() {
+            const params = new URLSearchParams();
+            const status = (form.querySelector('[name="status"]')?.value || '').trim();
+            const priority = (form.querySelector('[name="priority"]')?.value || '').trim();
+            const category = (form.querySelector('[name="category"]')?.value || '').trim();
 
-        if (status !== '') params.set('status', status);
-        if (priority !== '') params.set('priority', priority);
-        if (category !== '') params.set('category', category);
+            if (status !== '') params.set('status', status);
+            if (priority !== '') params.set('priority', priority);
+            if (category !== '') params.set('category', category);
 
-        const qs = params.toString();
-        const target = form.action + (qs ? ('?' + qs) : '');
-        window.location.href = target;
-    }
-
-    // escape regex special characters
-    function escapeRegExp(string) {
-        return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    }
-
-    // highlight matches inside title elements
-    function highlightTitles(term) {
-        const titles = document.querySelectorAll('.ticket-title-text');
-        if (!titles.length) return;
-        if (!term) {
-            titles.forEach(t => {
-                // restore plain text (escaped)
-                t.textContent = t.dataset.fullTitle || '';
-            });
-            return;
+            const qs = params.toString();
+            const target = form.action + (qs ? ('?' + qs) : '');
+            window.location.href = target;
         }
-        const re = new RegExp(escapeRegExp(term), 'ig');
-        titles.forEach(t => {
-            const original = t.dataset.fullTitle || '';
-            // replace matches with <strong> — original is plain text so safe
-            const replaced = original.replace(re, match => `<strong class="font-semibold bg-yellow-100 px-0.5 rounded">${match}</strong>`);
-            t.innerHTML = replaced;
+
+        // escape regex special characters
+        function escapeRegExp(string) {
+            return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        }
+
+        // highlight matches inside title elements
+        function highlightTitles(term) {
+            const titles = document.querySelectorAll('.ticket-title-text');
+            if (!titles.length) return;
+            if (!term) {
+                titles.forEach(t => {
+                    // restore plain text (escaped)
+                    t.textContent = t.dataset.fullTitle || '';
+                });
+                return;
+            }
+            const re = new RegExp(escapeRegExp(term), 'ig');
+            titles.forEach(t => {
+                const original = t.dataset.fullTitle || '';
+                // replace matches with <strong> — original is plain text so safe
+                const replaced = original.replace(re, match => `<strong class="font-semibold bg-yellow-100 px-0.5 rounded">${match}</strong>`);
+                t.innerHTML = replaced;
+            });
+        }
+
+        // client-side search only on title (incremental)
+        function filterClientTitle(term) {
+            const rows = document.querySelectorAll('[data-ticket-row]');
+            const searchTerm = (term !== undefined) ? term.trim().toLowerCase() : (document.getElementById('search')?.value || '').trim().toLowerCase();
+
+            rows.forEach(row => {
+                const titleEl = row.querySelector('.ticket-title-text');
+                const title = titleEl ? (titleEl.dataset.fullTitle || titleEl.textContent).trim().toLowerCase() : '';
+                const matches = !searchTerm || title.includes(searchTerm);
+                row.style.display = matches ? '' : 'none';
+            });
+
+            highlightTitles(searchTerm);
+        }
+
+        // submit when selects change
+        form.querySelectorAll('select').forEach(function(sel) {
+            sel.addEventListener('change', function() {
+                buildAndNavigate();
+            });
         });
-    }
 
-    // client-side search only on title (incremental)
-    function filterClientTitle(term) {
-        const rows = document.querySelectorAll('[data-ticket-row]');
-        const searchTerm = (term !== undefined) ? term.trim().toLowerCase() : (document.getElementById('search')?.value || '').trim().toLowerCase();
+        // handle client-side search typing and Enter (do not submit)
+        const search = document.getElementById('search');
+        if (search) {
+            search.addEventListener('input', function() {
+                filterClientTitle();
+            });
+            search.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    filterClientTitle();
+                }
+            });
+        }
 
-        rows.forEach(row => {
-            const titleEl = row.querySelector('.ticket-title-text');
-            const title = titleEl ? (titleEl.dataset.fullTitle || titleEl.textContent).trim().toLowerCase() : '';
-            const matches = !searchTerm || title.includes(searchTerm);
-            row.style.display = matches ? '' : 'none';
-        });
-
-        highlightTitles(searchTerm);
-    }
-
-    // submit when selects change
-    form.querySelectorAll('select').forEach(function (sel) {
-        sel.addEventListener('change', function () {
+        // prevent default form submit and use clean URL builder (so Enter on selects doesn't do full submit)
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
             buildAndNavigate();
         });
-    });
 
-    // handle client-side search typing and Enter (do not submit)
-    const search = document.getElementById('search');
-    if (search) {
-        search.addEventListener('input', function () {
-            filterClientTitle();
+        // clicking on status/category pills to set search and highlight
+        document.addEventListener('click', function(ev) {
+            const el = ev.target.closest('[data-word]');
+            if (!el) return;
+            const word = (el.dataset.word || '').trim();
+            if (!word) return;
+            if (search) search.value = word;
+            filterClientTitle(word.toLowerCase());
         });
-        search.addEventListener('keydown', function (e) {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                filterClientTitle();
-            }
-        });
-    }
 
-    // prevent default form submit and use clean URL builder (so Enter on selects doesn't do full submit)
-    form.addEventListener('submit', function (e) {
-        e.preventDefault();
-        buildAndNavigate();
+        // initial apply (no term)
+        filterClientTitle('');
     });
-
-    // clicking on status/category pills to set search and highlight
-    document.addEventListener('click', function (ev) {
-        const el = ev.target.closest('[data-word]');
-        if (!el) return;
-        const word = (el.dataset.word || '').trim();
-        if (!word) return;
-        if (search) search.value = word;
-        filterClientTitle(word.toLowerCase());
-    });
-
-    // initial apply (no term)
-    filterClientTitle('');
-});
 </script>

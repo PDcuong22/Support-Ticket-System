@@ -37,8 +37,34 @@
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-6">
-                    @include('tickets.partials._list', ['formAction' => route('tickets.index'), 'isAdminView' => false, 'isAgent' => $isAgent])
-                </div>
+                    {{-- Flash messages (success / error) --}}
+                    @if(session('success'))
+                        <div class="mb-4 rounded-md bg-green-50 p-4">
+                            <div class="text-sm text-green-700">
+                                {{ session('success') }}
+                            </div>
+                        </div>
+                    @elseif(session('error'))
+                        <div class="mb-4 rounded-md bg-red-50 p-4">
+                            <div class="text-sm text-red-700">
+                                {{ session('error') }}
+                            </div>
+                        </div>
+                    @endif
+
+                    {{-- Validation errors (optional) --}}
+                    @if($errors->any())
+                        <div class="mb-4 rounded-md bg-red-50 p-4">
+                            <ul class="text-sm text-red-700 list-disc pl-5">
+                                @foreach($errors->all() as $err)
+                                    <li>{{ $err }}</li>
+                                @endforeach
+                            </ul>
+                        </div>
+                    @endif
+                     
+                     @include('tickets.partials._list', ['formAction' => route('tickets.index'), 'isAdminView' => false, 'isAgent' => $isAgent])
+                 </div>
             </div>
         </div>
     </div>

@@ -10,6 +10,7 @@ use App\Services\StatusService;
 use Illuminate\Http\Request;
 use App\Models\Ticket;
 use App\Models\User;
+use Illuminate\Support\Facades\Auth;
 
 class AdminTicketController extends Controller
 {
@@ -26,7 +27,7 @@ class AdminTicketController extends Controller
 
     public function index(Request $request)
     {
-        $status = $request->query('status'); 
+        $status = $request->query('status');
         $priority = $request->query('priority');
         $category = $request->query('category');
 
@@ -43,7 +44,7 @@ class AdminTicketController extends Controller
             }
         }
 
-        if (! empty($priority)){
+        if (! empty($priority)) {
             $query->where('priority_id', $priority);
         }
 
@@ -52,7 +53,7 @@ class AdminTicketController extends Controller
                 $q->where('categories.id', $category);
             });
         }
-        
+
         $tickets = $query->orderBy('created_at', 'desc')->paginate(20)->withQueryString();
 
         return view('admin.tickets.index', compact('tickets', 'status'));
@@ -61,21 +62,38 @@ class AdminTicketController extends Controller
     public function edit(Ticket $ticket)
     {
         $agents = $this->userService->getUsersByRole('Support Agent');
-        $ticket = $this->ticketService->getTicketWithRelations($ticket->id, ['user','status', 'priority', 'categories', 'labels', 'attachments', 'assignedUser']);
+        $ticket = $this->ticketService->getTicketWithRelations($ticket->id, ['user', 'status', 'priority', 'categories', 'labels', 'attachments', 'assignedUser']);
+        $user = Auth::user();
+        $roleName = optional($user->role)->name;
+        if ($roleName === 'Support Agent') {
+            return view('tickets.edit', compact('ticket', 'agents'));
+        }
         return view('admin.tickets.edit', compact('ticket', 'agents'));
     }
 
     public function update(StoreTicketRequest $request, Ticket $ticket)
-    {        
+    {
         $validatedData = $request->validated();
         $this->ticketService->updateTicket($ticket, $validatedData);
 
-        return redirect()->route('admin.tickets.index')->with('success', 'Ticket updated successfully.');
+        $user = Auth::user();
+        $roleName = optional($user->role)->name;
+        if ($roleName === 'Admin') {
+            return redirect()->route('admin.tickets.index')->with('success', 'Ticket updated successfully.');
+        } else {
+            return redirect()->route('tickets.index')->with('success', 'Ticket updated successfully.');
+        }
     }
 
     public function destroy(Ticket $ticket)
     {
         $this->ticketService->deleteTicket($ticket);
         return redirect()->route('admin.tickets.index')->with('success', 'Ticket deleted successfully.');
+    }
+
+    public function show(Ticket $ticket)
+    {
+        $ticket = $this->ticketService->getTicketWithRelations($ticket->id, ['comments']);
+        return view('admin.tickets.show', compact('ticket'));
     }
 }

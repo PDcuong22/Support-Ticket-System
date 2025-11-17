@@ -73,7 +73,7 @@ class TicketController extends Controller
 
     public function show($id)
     {
-        $ticket = $this->ticketService->getTicketWithRelations($id, ['status', 'priority', 'categories', 'labels', 'attachments']);
+        $ticket = $this->ticketService->getTicketWithRelations($id, ['status', 'priority', 'categories', 'labels', 'attachments', 'comments']);
         return view('tickets.show', compact('ticket'));
     }
 
@@ -93,7 +93,7 @@ class TicketController extends Controller
 
             $admins = $this->userService->getUsersByRole('Admin');
             foreach ($admins as $admin) {
-                Mail::to($admin->email)->queue(new NewTicketCreated($ticket));
+                Mail::to($admin->email)->send(new NewTicketCreated($ticket));
             }
 
             return redirect()->route('tickets.show', compact('ticket'));

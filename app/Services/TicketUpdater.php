@@ -24,13 +24,17 @@ class TicketUpdater
      */
     public function fillTicket(Ticket $ticket, array $data): bool
     {
+        $assigned = array_key_exists('assigned_user_id', $data)
+            ? (trim((string)$data['assigned_user_id']) === '' ? null : (int) $data['assigned_user_id'])
+            : $ticket->assigned_user_id;
+
         $ticket->fill([
             'title' => $data['title'] ?? $ticket->title,
             'description' => $data['description'] ?? $ticket->description,
             'user_id' => $data['user_id'] ?? $ticket->user_id,
             'priority_id' => $data['priority_id'] ?? $ticket->priority_id,
             'status_id' => $data['status_id'] ?? $ticket->status_id,
-            'assigned_user_id' => $data['assigned_user_id'] ?? $ticket->assigned_user_id,
+            'assigned_user_id' => $assigned,
         ]);
 
         return $ticket->isDirty();

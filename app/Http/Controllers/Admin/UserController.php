@@ -27,8 +27,13 @@ class UserController extends Controller
     public function index()
     {
         $users = $this->userService->getAllUsersWithRelations(['role']);
+
+        $filtered = $users->filter(function($user) {
+            return strtolower(optional($user->role)->name ?? '') !== 'admin';
+        })->values();
+
         $roles = $this->roleService->getAllRoles();
-        return view('admin.users.index', compact('users', 'roles'));
+        return view('admin.users.index', ['users' => $filtered, 'roles' => $roles]);
     }
 
     /**

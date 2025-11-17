@@ -23,30 +23,8 @@
         </div>
     </section>
 
-    <section>
-        <h2 class="text-lg font-medium text-gray-800 mb-4">Comments ({{ $ticket->comments->count() }})</h2>
-
-        @if($ticket->comments->isEmpty())
-            <p class="text-sm text-gray-500">No comments yet.</p>
-        @else
-            <div class="space-y-4">
-                @foreach($ticket->comments as $comment)
-                <div class="border rounded-md p-4 bg-white">
-                    <div class="flex items-start justify-between">
-                        <div>
-                            <p class="text-sm font-medium text-gray-800">
-                                {{ optional($comment->user)->name ?? 'System' }}
-                                <span class="text-xs text-gray-400 ml-2">{{ $comment->created_at->diffForHumans() }}</span>
-                            </p>
-                        </div>
-                    </div>
-                    <div class="mt-2 text-gray-700 text-sm">
-                        {!! nl2br(e($comment->body)) !!}
-                    </div>
-                </div>
-                @endforeach
-            </div>
-        @endif
-    </section>
+    @include('tickets.partials.comments', [
+        'ticket' => $ticket,
+    ])
 </div>
 @endsection

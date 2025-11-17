@@ -16,8 +16,21 @@ class CommentController extends Controller
                 'content' => $request->input('content'),
                 'user_id' => Auth::id(),
             ]);
+
+            $isAdmin = Auth::check() && optional(Auth::user()->role)->name === 'Admin';
+
+            if ($isAdmin) {
+                return redirect()->route('admin.tickets.show', $ticket)->with('success', 'Comment added successfully.');
+            }
+
             return redirect()->route('tickets.show', $ticket)->with('success', 'Comment added successfully.');
         } catch (\Exception $e) {
+            $isAdmin = Auth::check() && optional(Auth::user()->role)->name === 'Admin';
+
+            if ($isAdmin) {
+                return redirect()->route('admin.tickets.show', $ticket)->with('error', 'Failed to add comment.' . $e->getMessage());
+            }
+
             return redirect()->route('tickets.show', $ticket)->with('error', 'Failed to add comment.' . $e->getMessage());
         }
     }
@@ -32,8 +45,20 @@ class CommentController extends Controller
             }
             $comment->delete();
 
+            $isAdmin = Auth::check() && optional(Auth::user()->role)->name === 'Admin';
+
+            if ($isAdmin) {
+                return redirect()->route('admin.tickets.show', $ticket)->with('success', 'Comment deleted successfully.');
+            }
+
             return redirect()->route('tickets.show', $ticket)->with('success', 'Comment deleted successfully.');
         } catch (\Exception $e) {
+            $isAdmin = Auth::check() && optional(Auth::user()->role)->name === 'Admin';
+
+            if ($isAdmin) {
+                return redirect()->route('admin.tickets.show', $ticket)->with('error', 'Failed to delete comment.' . $e->getMessage());
+            }
+
             return redirect()->route('tickets.show', $ticket)->with('error', 'Failed to delete comment.' . $e->getMessage());
         }
     }

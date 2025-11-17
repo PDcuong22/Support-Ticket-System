@@ -24,7 +24,7 @@ Route::middleware(['auth'])->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
-    Route::resource('tickets', TicketController::class);
+    Route::resource('tickets', TicketController::class)->except(['destroy', 'edit', 'update']);
 
     Route::post('/tickets/{ticket}/comments', [CommentController::class, 'store'])->name('comments.store');
     Route::delete('/tickets/{ticket}/comments/{comment}', [CommentController::class, 'destroy'])->name('comments.destroy');
@@ -37,12 +37,17 @@ Route::middleware(['auth', 'role:Admin'])->prefix('admin')->name('admin.')->grou
     Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
     Route::get('/ticket-logs', [TicketLogController::class, 'index'])->name('ticket-logs.index');
 
-    Route::resource('tickets', AdminTicketController::class);
+    Route::resource('tickets', AdminTicketController::class)->except(['edit', 'update']);
     Route::resource('labels', LabelController::class);
     Route::resource('categories', CategoryController::class);
     Route::resource('users', UserController::class);
 
     Route::patch('users/{user}/update-role', [UserController::class, 'updateRole'])->name('users.updateRole');
+});
+
+Route::middleware(['auth', 'role:Admin,Support Agent'])->group(function () {
+    Route::get('/admin/tickets/{ticket}/edit', [AdminTicketController::class, 'edit'])->name('admin.tickets.edit');
+    Route::patch('/admin/tickets/{ticket}', [AdminTicketController::class, 'update'])->name('admin.tickets.update');
 });
 
 require __DIR__ . '/auth.php';
