@@ -3,7 +3,7 @@
         <h3 class="text-lg font-semibold text-gray-900 mb-6">
             Comments ({{ $ticket->comments->count() }})
         </h3>
-        
+
         {{-- Comment Form --}}
         <form action="{{ route('comments.store', $ticket) }}" method="POST" class="mb-6">
             @csrf
@@ -16,17 +16,17 @@
                     </div>
                 </div>
                 <div class="flex-1">
-                    <textarea 
-                        name="content" 
-                        rows="3" 
+                    <textarea
+                        name="content"
+                        rows="3"
                         placeholder="Add a comment..."
-                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none @error('content') border-red-500 @enderror"
+                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none @error('content') @enderror"
                         required>{{ old('content') }}</textarea>
                     @error('content')
                         <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                     @enderror
                     <div class="mt-2 flex justify-end">
-                        <button type="submit" 
+                        <button type="submit"
                                 class="bg-purple-600 hover:bg-purple-700 text-white font-medium px-6 py-2 rounded-lg transition">
                             Post Comment
                         </button>
@@ -59,13 +59,13 @@
                                     <div class="flex items-center gap-2">
                                         <span class="text-xs text-gray-500">{{ $comment->created_at->diffForHumans() }}</span>
                                         @if($comment->user_id === Auth::id())
-                                            <form action="{{ route('comments.destroy', [$ticket, $comment]) }}" 
-                                                  method="POST" 
+                                            <form action="{{ route('comments.destroy', [$ticket, $comment]) }}"
+                                                  method="POST"
                                                   onsubmit="return confirm('Are you sure you want to delete this comment?');"
                                                   class="opacity-0 group-hover:opacity-100 transition">
                                                 @csrf
                                                 @method('DELETE')
-                                                <button type="submit" 
+                                                <button type="submit"
                                                         class="text-red-600 hover:text-red-800 text-xs font-medium">
                                                     Delete
                                                 </button>

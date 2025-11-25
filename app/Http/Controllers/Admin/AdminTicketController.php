@@ -65,7 +65,7 @@ class AdminTicketController extends Controller
         $ticket = $this->ticketService->getTicketWithRelations($ticket->id, ['user', 'status', 'priority', 'categories', 'labels', 'attachments', 'assignedUser']);
         $user = Auth::user();
         $roleName = optional($user->role)->name;
-        if ($roleName === 'Support Agent') {
+        if ($roleName === 'Support Agent' && $ticket->assigned_user_id === $user->id) {
             return view('tickets.edit', compact('ticket', 'agents'));
         }
         return view('admin.tickets.edit', compact('ticket', 'agents'));

@@ -13,7 +13,7 @@ class TicketPolicy
      */
     public function viewAny(User $user): bool
     {
-        return false;
+        return $this->isAdmin($user);
     }
 
     /**
@@ -25,15 +25,9 @@ class TicketPolicy
             return false;
         }
 
-        if ($ticket->user_id === $user->id) {
-            return true;
-        }
-
-        if ($ticket->assigned_user_id === $user->id) {
-            return true;
-        }
-
-        return false;
+        return $this->isAdmin($user)
+            || $user->id === $ticket->user_id
+            || $user->id === $ticket->assigned_user_id;
     }
 
     public function comment(User $user, Ticket $ticket): bool
@@ -46,7 +40,7 @@ class TicketPolicy
      */
     public function create(User $user): bool
     {
-        return false;
+        return (bool) $user;
     }
 
     /**
@@ -54,7 +48,7 @@ class TicketPolicy
      */
     public function update(User $user, Ticket $ticket): bool
     {
-        return false;
+        return $this->isAdminOrAgent($user);
     }
 
     /**
@@ -62,7 +56,7 @@ class TicketPolicy
      */
     public function delete(User $user, Ticket $ticket): bool
     {
-        return false;
+        return $this->isAdmin($user);
     }
 
     /**
@@ -79,5 +73,24 @@ class TicketPolicy
     public function forceDelete(User $user, Ticket $ticket): bool
     {
         return false;
+    }
+
+    protected function getRoleName(User $user): ?string
+    {
+        if (method_exists($user, 'role') && $user->role) {
+            return optional($user->role)->name;
+        }
+        return $user->role ?? null;
+    }
+
+    protected function isAdmin(User $user): bool
+    {
+        return strcasecmp($this->getRoleName($user) ?? '', 'admin') === 0;
+    }
+
+    protected function isAdminOrAgent(User $user): bool
+    {
+        $r = strtolower($this->getRoleName($user) ?? '');
+        return in_array($r, ['admin', 'support agent', 'agent', 'support'], true);
     }
 }
