@@ -4,6 +4,7 @@ namespace App\Http\Resources;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Pagination\AbstractPaginator;
 use Illuminate\Support\Facades\Storage;
 
 class TicketResource extends JsonResource
@@ -59,7 +60,7 @@ class TicketResource extends JsonResource
             'updated_at' => $this->updated_at,
         ];
 
-        if (in_array($role, ['admin', 'support agent'])){
+        if (in_array($role, ['admin', 'support agent'])) {
             $data['user'] = $this->whenLoaded('user', function () {
                 return $this->user ? [
                     'id' => $this->user->id,
@@ -76,5 +77,20 @@ class TicketResource extends JsonResource
             });
         }
         return $data;
+    }
+
+    public function with(Request $request): array
+    {
+        if ($this->resource instanceof AbstractPaginator) {
+            return [
+                'meta' => [
+                    'total' => $this->resource->total(),
+                    'current_page' => $this->resource->currentPage(),
+                    'per_page' => $this->resource->perPage(),
+                    'last_page' => $this->resource->lastPage(),
+                ],
+            ];
+        }
+        return [];
     }
 }

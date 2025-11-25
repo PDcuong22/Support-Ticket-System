@@ -6,6 +6,7 @@ use App\Interfaces\AttachmentRepositoryInterface;
 use App\Models\Attachment;
 use Illuminate\Http\UploadedFile;
 use App\Models\Ticket;
+use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
@@ -27,8 +28,16 @@ class AttachmentService
         $this->attachmentRepository = $attachmentRepository;
     }
 
-    public function uploadAttachment(Ticket $ticket, UploadedFile $file): Attachment
+    public function uploadAttachment(Ticket $ticket, UploadedFile $file, $uploadedBy = null): Attachment
     {
+        if ($uploadedBy instanceof User) {
+            $uId = $uploadedBy->id;
+        } elseif (is_int($uploadedBy)) {
+            $uId = $uploadedBy;
+        } else {
+            $uId = Auth::id();
+        }
+
         $path = $file->store('attachments', 'public');
         return $this->attachmentRepository->create([
             'ticket_id' => $ticket->id,
@@ -36,7 +45,7 @@ class AttachmentService
             'file_name' => $file->getClientOriginalName(),
             'file_size' => $file->getSize(),
             'mime_type' => $file->getClientMimeType(),
-            'uploaded_by' => Auth::id(),
+            'uploaded_by' => $uId,
         ]);
     }
 

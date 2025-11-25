@@ -11,7 +11,7 @@ class StoreTicketRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return true; 
+        return true;
     }
 
     /**
@@ -25,7 +25,7 @@ class StoreTicketRequest extends FormRequest
             'title' => 'required|string|max:255',
             'description' => 'required|string',
             'priority_id' => 'required|exists:priorities,id',
-            'status_id' => 'sometimes|exists:statuses,id',
+            'status_id' => 'sometimes|nullable|exists:statuses,id',
             'user_id' => 'sometimes|exists:users,id',
             'categories' => 'required|array',
             'categories.*' => 'exists:categories,id',
@@ -34,6 +34,8 @@ class StoreTicketRequest extends FormRequest
             'attachments' => 'nullable|array',
             'attachments.*' => 'file|max:10240|mimes:jpg,jpeg,png,pdf,doc,docx,txt',
             'assigned_user_id' => 'sometimes|nullable|exists:users,id',
+            'attachments_to_remove' => 'sometimes|nullable|array',
+            'attachments_to_remove.*' => 'integer|exists:attachments,id',
         ];
     }
 

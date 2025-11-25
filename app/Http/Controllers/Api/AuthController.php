@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use App\Models\User;
+use App\Models\Role;
 use App\Http\Resources\AuthUserResource;
 
 class AuthController extends Controller
@@ -24,13 +25,18 @@ class AuthController extends Controller
             'password' => 'required|string|min:8|confirmed',
         ]);
 
+        $roleId = Role::where('name', 'User')->value('id');
+
         $user = User::create([
             'name' => $data['name'],
             'email' => $data['email'],
             'password' => Hash::make($data['password']),
+            'role_id' => $roleId,
         ]);
 
-        return response()->json(['message' => 'User registered successfully'], 201);
+        return (new AuthUserResource($user->load('role')))
+            ->response()
+            ->setStatusCode(201);
     }
 
     /**

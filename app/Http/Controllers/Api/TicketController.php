@@ -3,10 +3,12 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\ListTicketRequest;
 use Illuminate\Http\Request;
 use App\Http\Requests\StoreTicketRequest;
 use App\Http\Resources\TicketResource;
 use App\Models\Ticket;
+use App\Models\Status;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use App\Services\TicketService;
 
@@ -19,21 +21,46 @@ class TicketController extends Controller
         $this->ticketService = $ticketService;
     }
 
-    public function index(Request $request)
+    public function index(ListTicketRequest $request)
     {
         $user = $request->user();
+        $data = $request->validated();
 
         $with = ['user', 'assignedUser', 'status', 'priority', 'categories', 'labels', 'attachments'];
 
-        $query = Ticket::with($with)->orderBy('created_at', 'desc');
+        $query = Ticket::with($with);
+
+        if (!empty($data['q'])) {
+            $q = $data['q'];
+            $query->where(function ($qbuilder) use ($q) {
+                $qbuilder->where('title', 'like', "%{$q}%")
+                    ->orWhere('description', 'like', "%{$q}%");
+            });
+        }
+
+        if (!empty($data['status_id'])) {
+            $query->where('status_id', $data['status_id']);
+        }
+
+        if (!empty($data['priority_id'])) {
+            $query->where('priority_id', $data['priority_id']);
+        }
+
+        if (!empty($data['category_id']) && is_array($data['category_id'])) {
+            $categoryIds = $data['category_id'];
+            $query->whereHas('categories', function ($q) use ($categoryIds) {
+                $q->whereIn('categories.id', $categoryIds);
+            });
+        }
+
+        $perPage = $data['size'] ?? 10;
+        $paginator = $query->orderBy('created_at', 'desc')->paginate($perPage);
 
         if (! $user->can('viewAny', Ticket::class)) {
             $query->where(fn($q) => $q->where('user_id', $user->id)->orWhere('assigned_user_id', $user->id));
         }
 
-        $tickets = $query->paginate(10);
-
-        return TicketResource::collection($tickets);
+        return TicketResource::collection($paginator);
     }
 
     public function show(Ticket $ticket)
@@ -53,7 +80,7 @@ class TicketController extends Controller
             $validatedData['user_id'] = $request->user()->id;
             $validatedData['status_id'] = 1;
 
-            $ticket = $this->ticketService->createTicket($validatedData);
+            $ticket = $this->ticketService->createTicket($validatedData, $request->user());
 
             $ticket->load(['user', 'assignedUser', 'status', 'priority', 'categories', 'labels']);
 
@@ -65,11 +92,45 @@ class TicketController extends Controller
 
     public function update(StoreTicketRequest $request, Ticket $ticket)
     {
-        $validatedData = $request->validated();
-        $this->ticketService->updateTicket($ticket, $validatedData);
+        try {
+            $validatedData = $request->validated();
+            $res = $this->ticketService->updateTicket($ticket, $validatedData, $request->user());
 
-        $ticket->load(['user', 'assignedUser', 'status', 'priority', 'categories', 'labels']);
+            return new TicketResource($res);
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Failed to update ticket', 'error' => $e->getMessage()], 500);
+        }
+    }
 
-        return new TicketResource($ticket);
+    public function destroy(Ticket $ticket)
+    {
+        try {
+            $this->authorize('delete', $ticket);
+            $this->ticketService->deleteTicket($ticket);
+
+            return response()->json(['message' => 'Ticket deleted successfully'], 200);
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Failed to delete ticket', 'error' => $e->getMessage()], 500);
+        }
+    }
+
+    public function stats()
+    {
+        try {
+            $user = request()->user();
+            if ($user->can('viewAny', Ticket::class)) {
+                $total = Ticket::count();
+                $open = $this->ticketService->getTicketCountByStatus('Open');
+                $closed = $this->ticketService->getTicketCountByStatus('Closed');
+                return response()->json(['data' => compact('total', 'open', 'closed')]);
+            } else {
+                $totalTickets = Ticket::where('user_id', $user->id)
+                    ->orWhere('assigned_user_id', $user->id)
+                    ->count();
+                return response()->json(['total' => $totalTickets], 200);
+            }
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
     }
 }

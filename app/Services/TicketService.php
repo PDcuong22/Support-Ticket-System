@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\DB;
 use App\Services\AttachmentService;
 use App\Models\Ticket;
 use App\Models\TicketLog;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Auth;
@@ -31,7 +32,7 @@ class TicketService
 
     /**
      * Get all tickets.
-     * 
+     *
      * @return Collection
      */
     public function getAllTickets(): Collection
@@ -41,7 +42,7 @@ class TicketService
 
     /**
      * Get all tickets with specified relations loaded.
-     * 
+     *
      * @param array $relations
      * @return Builder
      */
@@ -52,7 +53,7 @@ class TicketService
 
     /**
      * Get a ticket by its ID.
-     * 
+     *
      * @param int $id
      * @return Ticket|null
      */
@@ -63,12 +64,12 @@ class TicketService
 
     /**
      * Create a new ticket with associated data.
-     * 
+     *
      * @param array $data
      * @return Ticket
      * @throws \Exception
      */
-    public function createTicket(array $data): Ticket
+    public function createTicket(array $data, ?User $uploadedBy = null): Ticket
     {
         DB::beginTransaction();
         try {
@@ -90,7 +91,7 @@ class TicketService
 
             if (isset($data['attachments'])) {
                 foreach ($data['attachments'] as $file) {
-                    $this->attachmentService->uploadAttachment($ticket, $file);
+                    $this->attachmentService->uploadAttachment($ticket, $file, $uploadedBy);
                 }
             }
 
@@ -118,7 +119,7 @@ class TicketService
 
     /**
      * Update a ticket with given data.
-     * 
+     *
      * @param Ticket $ticket
      * @param array $data
      * @return Ticket|null
@@ -132,6 +133,19 @@ class TicketService
 
             [$currentCategories, $incomingCategories, $shouldSyncCategories] = $this->ticketUpdater->compareCategories($ticket, $data);
             [$currentLabels, $incomingLabels, $shouldSyncLabels] = $this->ticketUpdater->compareLabels($ticket, $data);
+
+            if (isset($data['attachments_to_remove'])) {
+                foreach ($data['attachments_to_remove'] as $attachmentId) {
+                    $this->attachmentService->deleteAttachment($attachmentId);
+                }
+            }
+
+            if (isset($data['attachments'])) {
+                foreach ($data['attachments'] as $file) {
+                    $uploadedBy = $actor ?? Auth::id();
+                    $this->attachmentService->uploadAttachment($ticket, $file, $uploadedBy);
+                }
+            }
 
             if (! $hasModelChanges && ! $shouldSyncCategories && ! $shouldSyncLabels) {
                 DB::commit();
@@ -177,7 +191,7 @@ class TicketService
 
     /**
      * Delete a ticket along with its attachments.
-     * 
+     *
      * @param Ticket $ticket
      * @return bool
      * @throws Throwable
@@ -205,7 +219,7 @@ class TicketService
 
     /**
      * Get the count of tickets for a specific user.
-     * 
+     *
      * @param mixed $userId
      * @return int
      */
@@ -216,7 +230,7 @@ class TicketService
 
     /**
      * Get the count of tickets assigned to a specific user.
-     * 
+     *
      * @param mixed $userId
      * @return int
      */
@@ -227,7 +241,7 @@ class TicketService
 
     /**
      * Get a ticket with specified relations loaded.
-     * 
+     *
      * @param int $id
      * @param array $relations
      * @return Ticket|null
@@ -239,7 +253,7 @@ class TicketService
 
     /**
      * Get the total count of tickets.
-     * 
+     *
      * @return int
      */
     public function getTotalTicketCount() : int
@@ -249,7 +263,7 @@ class TicketService
 
     /**
      * Get the count of tickets by status.
-     * 
+     *
      * @param string $status
      * @return int
      */
