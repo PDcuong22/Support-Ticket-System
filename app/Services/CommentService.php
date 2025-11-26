@@ -32,4 +32,9 @@ class CommentService
     {
         return $this->commentRepository->delete($id);
     }
+    
+    public function getCommentsByTicketId($ticketId)
+    {
+        return $this->commentRepository->findByTicketId($ticketId);
+    }
 }

@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\PriorityController;
 use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\Api\LabelController;
 use App\Http\Controllers\Api\UserController;
+use App\Http\Controllers\Api\CommentController;
 use Illuminate\Support\Facades\Route;
 
 Route::post('login', [AuthController::class, 'login']);
@@ -23,6 +24,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('priorities', [PriorityController::class, 'index']);
     Route::get('categories', [CategoryController::class, 'index']);
     Route::get('labels', [LabelController::class, 'index']);
+
+    Route::get('comments/{ticketId}', [CommentController::class, 'index']);
+    Route::post('comments/{ticketId}', [CommentController::class, 'store']);
 
     Route::middleware('role:Admin,Support Agent')->group(function () {
         Route::get('users', [UserController::class, 'index']);

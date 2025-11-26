@@ -2,4 +2,7 @@
 
 namespace App\Interfaces;
 
-interface CommentRepositoryInterface extends BaseRepositoryInterface {}
+use Illuminate\Database\Eloquent\Builder;
+interface CommentRepositoryInterface extends BaseRepositoryInterface {
+    public function findByTicketId($ticketId): Builder;
+}

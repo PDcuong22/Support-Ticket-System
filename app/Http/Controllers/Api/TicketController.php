@@ -54,11 +54,11 @@ class TicketController extends Controller
         }
 
         $perPage = $data['size'] ?? 10;
-        $paginator = $query->orderBy('created_at', 'desc')->paginate($perPage);
 
         if (! $user->can('viewAny', Ticket::class)) {
             $query->where(fn($q) => $q->where('user_id', $user->id)->orWhere('assigned_user_id', $user->id));
         }
+        $paginator = $query->orderBy('created_at', 'desc')->paginate($perPage);
 
         return TicketResource::collection($paginator);
     }
@@ -124,10 +124,10 @@ class TicketController extends Controller
                 $closed = $this->ticketService->getTicketCountByStatus('Closed');
                 return response()->json(['data' => compact('total', 'open', 'closed')]);
             } else {
-                $totalTickets = Ticket::where('user_id', $user->id)
+                $total = Ticket::where('user_id', $user->id)
                     ->orWhere('assigned_user_id', $user->id)
                     ->count();
-                return response()->json(['total' => $totalTickets], 200);
+                return response()->json(['data' => compact('total')], 200);
             }
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 500);
