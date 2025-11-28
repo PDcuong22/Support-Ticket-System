@@ -9,9 +9,32 @@ use App\Http\Controllers\Api\LabelController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\CommentController;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Broadcast;
+use Laravel\Sanctum\PersonalAccessToken;
 
 Route::post('login', [AuthController::class, 'login']);
 Route::post('register', [AuthController::class, 'register']);
+
+Route::post('/broadcasting/auth', function (Request $request) {
+    $token = $request->bearerToken();
+
+    if (!$token) {
+        return response()->json(['message' => 'Missing token'], 401);
+    }
+
+    $accessToken = PersonalAccessToken::findToken($token);
+
+    if (!$accessToken) {
+        return response()->json(['message' => 'Invalid token'], 403);
+    }
+
+    $request->setUserResolver(function () use ($accessToken) {
+        return $accessToken->tokenable;
+    });
+
+    return Broadcast::auth($request);
+});
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('logout', [AuthController::class, 'logout']);

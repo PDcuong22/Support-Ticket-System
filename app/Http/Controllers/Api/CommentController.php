@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Events\CommentCreated;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\CommentResource;
 use App\Models\Comment;
@@ -34,6 +35,9 @@ class CommentController extends Controller
         $data['ticket_id'] = $ticketId;
         $data['user_id'] = $user->id;
         $comment = $this->commentService->createComment($data);
+
+        event(new CommentCreated($comment));
+
         return new CommentResource($comment);
     }
 }
