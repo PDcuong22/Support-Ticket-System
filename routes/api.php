@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\Api\LabelController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\CommentController;
+use App\Http\Controllers\Api\ActivityConttroller;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Broadcast;
@@ -53,5 +54,9 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::middleware('role:Admin,Support Agent')->group(function () {
         Route::get('users', [UserController::class, 'index']);
+    });
+
+    Route::middleware('role:Admin')->group(function () {
+        Route::get('activities', [ActivityConttroller::class, 'index']);
     });
 });
