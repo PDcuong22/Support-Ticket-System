@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\LabelController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\CommentController;
 use App\Http\Controllers\Api\ActivityConttroller;
+use App\Http\Controllers\Api\RoleController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Broadcast;
@@ -53,10 +54,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('comments/{ticketId}', [CommentController::class, 'store']);
 
     Route::middleware('role:Admin,Support Agent')->group(function () {
-        Route::get('users', [UserController::class, 'index']);
+        Route::get('list-agents', [UserController::class, 'allAgents']);
     });
 
     Route::middleware('role:Admin')->group(function () {
+        Route::resources(['users' => UserController::class]);
         Route::get('activities', [ActivityConttroller::class, 'index']);
+        Route::get('roles', [RoleController::class, 'index']);
     });
 });
