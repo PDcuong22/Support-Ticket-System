@@ -61,5 +61,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::resources(['users' => UserController::class]);
         Route::get('activities', [ActivityConttroller::class, 'index']);
         Route::get('roles', [RoleController::class, 'index']);
+        Route::resource('categories', CategoryController::class)->except(['index', 'show']);
+        Route::resource('labels', LabelController::class)->except(['index', 'show']);
     });
 });
