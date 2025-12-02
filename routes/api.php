@@ -9,6 +9,8 @@ use App\Http\Controllers\Api\LabelController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\CommentController;
 use App\Http\Controllers\Api\ActivityConttroller;
+use App\Http\Controllers\Api\ProfileController;
+use App\Http\Controllers\Api\PasswordController;
 use App\Http\Controllers\Api\RoleController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Http\Request;
@@ -41,6 +43,8 @@ Route::post('/broadcasting/auth', function (Request $request) {
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('logout', [AuthController::class, 'logout']);
     Route::get('profile', [AuthController::class, 'profile']);
+    Route::put('profile', [ProfileController::class, 'update']);
+    Route::put('password', [PasswordController::class, 'update']);
 
     Route::get('stats', [TicketController::class, 'stats']);
     Route::resources(['tickets' => TicketController::class]);
